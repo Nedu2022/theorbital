@@ -33,22 +33,20 @@ export default function DeckGLOverlay({
       })
   );
 
-  // Helper status color mapping
   const getStatusColor = (status: number): [number, number, number] => {
     switch (status) {
       case 0:
-        return [0, 255, 157]; // Neon Green (Moving)
+        return [0, 255, 157];
       case 1:
-        return [251, 191, 36]; // Yellow (Anchored)
+        return [251, 191, 36];
       case 5:
-        return [59, 130, 246]; // Blue (Moored)
+        return [59, 130, 246];
       default:
-        return [148, 163, 184]; // Grey
+        return [148, 163, 184];
     }
   };
 
   const layers = [
-    // 2. Ship Dot (Core)
     new ScatterplotLayer<MergedShip>({
       id: "ship-dots",
       data: ships,
@@ -61,8 +59,8 @@ export default function DeckGLOverlay({
       radiusMaxPixels: 20,
       lineWidthMinPixels: 1,
       getPosition: (d) => [d.lng, d.lat],
-      getRadius: (d) => (d.sog > 1 ? 200 : 100), // Size in meters
-      getFillColor: (d) => [0, 0, 0, 200], // Black center
+      getRadius: (d) => (d.sog > 1 ? 200 : 100),
+      getFillColor: (d) => [0, 0, 0, 200],
       getLineColor: (d) => getStatusColor(d.status),
       onClick: ({ object }) => object && onSelectShip(object),
       transitions: {
@@ -74,7 +72,6 @@ export default function DeckGLOverlay({
       getRowId: (d) => d.mmsi,
     }),
 
-    // 3. Crisis Zones
     new PolygonLayer({
       id: "crisis-zones",
       data: zones,
@@ -95,7 +92,6 @@ export default function DeckGLOverlay({
       },
     }),
 
-    // 4. Port Names (Text)
     new TextLayer({
       id: "port-names",
       data: MAJOR_PORTS,
@@ -107,7 +103,7 @@ export default function DeckGLOverlay({
       getAngle: 0,
       getTextAnchor: "middle",
       getAlignmentBaseline: "center",
-      fontFamily: "Inter, system-ui, sans-serif",
+      fontFamily: "Share Tech Mono, monospace",
       fontWeight: "bold",
       outlineColor: [0, 0, 0, 255],
       outlineWidth: 4,

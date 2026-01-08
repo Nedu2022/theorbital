@@ -1,14 +1,4 @@
-#!/usr/bin/env node
 
-/**
- * WebSocket Proxy Server for AisStream.io with Connection Pooling
- *
- * Architecture:
- *   - Single shared AisStream connection for all browser clients
- *   - Subscription buffering during connection establishment
- *   - Broadcast AIS messages to all connected browsers
- *   - Automatic reconnection with exponential backoff
- */
 
 const WebSocket = require("ws");
 const http = require("http");
@@ -16,23 +6,20 @@ require("dotenv").config({ path: ".env.local" });
 
 const PORT = process.env.WS_PROXY_PORT || 3001;
 const AIS_API_KEY = process.env.NEXT_PUBLIC_AISSTREAM_API_KEY;
-const HEARTBEAT_INTERVAL = 30000; // 30 seconds
-const RECONNECT_BASE_DELAY = 1000; // 1 second
-const RECONNECT_MAX_DELAY = 30000; // 30 seconds
-const DISCONNECT_GRACE_PERIOD = 5000; // 5 seconds grace period to prevent thrashing
+const HEARTBEAT_INTERVAL = 30000; 
+const RECONNECT_BASE_DELAY = 1000; 
+const RECONNECT_MAX_DELAY = 30000; 
+const DISCONNECT_GRACE_PERIOD = 5000; 
 
 if (!AIS_API_KEY) {
   console.error(
-    "❌ FATAL: NEXT_PUBLIC_AISSTREAM_API_KEY not found in .env.local"
+    " FATAL: NEXT_PUBLIC_AISSTREAM_API_KEY not found in .env.local"
   );
   process.exit(1);
 }
 
 console.log("🔑 API Key loaded:", "..." + AIS_API_KEY.slice(-4));
 
-// ============================================================================
-// SINGLETON AISSTREAM CONNECTION MANAGER
-// ============================================================================
 
 class AISStreamManager {
   constructor() {
@@ -94,7 +81,7 @@ class AISStreamManager {
       if (msgStr.includes("error") || msgStr.includes("Error")) {
         console.error("🔥 UPSTREAM SENT ERROR:", msgStr);
       } else if (Math.random() < 0.1) {
-        console.log("📨 Upstream sample:", msgStr.slice(0, 500)); // Log 500 chars to see structure
+        console.log("📨 Upstream sample:", msgStr.slice(0, 500)); 
       }
 
       // Broadcast AIS messages to all connected browser clients

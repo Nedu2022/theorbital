@@ -1,7 +1,5 @@
-
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-// AIS Stream Message Types
 export interface AISMessage {
     MessageType: string;
     MetaData: {
@@ -9,8 +7,8 @@ export interface AISMessage {
         ShipName: string;
         Latitude: number;
         Longitude: number;
-        latitude: number; // Correct field name from API
-        longitude: number; // Correct field name from API
+        latitude: number;
+        longitude: number;
         time_utc: string;
     };
     Message: {
@@ -36,7 +34,7 @@ export interface AISMessage {
 }
 
 interface UseAISSocketProps {
-    bbox?: [number, number, number, number]; // [minLat, minLon, maxLat, maxLon]
+    bbox?: [number, number, number, number];
     enabled?: boolean;
 }
 
@@ -48,7 +46,6 @@ export const useAISSocket = ({ bbox, enabled = true }: UseAISSocketProps) => {
     const isConnectingRef = useRef(false);
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Create stable key for bbox to prevent referential equality issues
     const bboxKey = JSON.stringify(bbox);
 
     const connect = useCallback(() => {
@@ -57,29 +54,25 @@ export const useAISSocket = ({ bbox, enabled = true }: UseAISSocketProps) => {
             return;
         }
 
-        // Prevent duplicate connections
         if (isConnectingRef.current || socketRef.current?.readyState === WebSocket.OPEN) {
-            console.log('⏭️ Skipping connection - already connected or connecting');
+            console.log('Skipping connection - already connected or connecting');
             return;
         }
 
         isConnectingRef.current = true;
         setStatus('connecting');
 
-        // Connect to LOCAL proxy server instead of AisStream directly
-        // The proxy will handle the API key securely
         const PROXY_URL = process.env.NEXT_PUBLIC_WS_PROXY_URL || 'ws://localhost:3001';
 
-        console.log('🔌 Creating WebSocket connection to proxy:', PROXY_URL);
+        console.log('Creating WebSocket connection to proxy:', PROXY_URL);
         const ws = new WebSocket(PROXY_URL);
 
         ws.onopen = () => {
-            console.log('✅ Proxy Connected! Ready state:', ws.readyState);
+            console.log('Proxy Connected! Ready state:', ws.readyState);
             isConnectingRef.current = false;
-            setStatus('connecting'); // Will be updated when proxy confirms AisStream connection
+            setStatus('connecting');
             setErrorCode(null);
 
-            // Send subscription WITHOUT API key (proxy adds it server-side)
             const subscription = {
                 BoundingBoxes: [
                     bbox
@@ -87,11 +80,10 @@ export const useAISSocket = ({ bbox, enabled = true }: UseAISSocketProps) => {
                         : [[-90, -180], [90, 180]]
                 ],
                 FilterMessageTypes: ["PositionReport", "StandardClassBPositionReport", "ShipStaticData"]
-                // Note: NO APIKey here - proxy adds it securely
             };
 
             const subMsg = JSON.stringify(subscription);
-            console.log('📤 Sending Subscription to proxy:', subMsg);
+            console.log('Sending Subscription to proxy:', subMsg);
             ws.send(subMsg);
         };
 
@@ -99,9 +91,8 @@ export const useAISSocket = ({ bbox, enabled = true }: UseAISSocketProps) => {
             try {
                 const message = JSON.parse(event.data);
 
-                // Handle proxy status messages
                 if (message.type === 'proxy_status') {
-                    console.log('📡 Proxy status:', message.status);
+                    console.log('Proxy status:', message.status);
                     if (message.status === 'connected') {
                         setStatus('connected');
                         setErrorCode(null);
@@ -115,23 +106,21 @@ export const useAISSocket = ({ bbox, enabled = true }: UseAISSocketProps) => {
                 }
 
                 if (message.type === 'proxy_error') {
-                    console.error('❌ Proxy error:', message.error);
+                    console.error('Proxy error:', message.error);
                     setErrorCode(`Proxy error: ${message.error}`);
                     setStatus('error');
                     return;
                 }
 
-                // Check for AisStream error response
                 if (message.error) {
-                    console.error('❌ AIS Stream Error Response:', message.error);
+                    console.error('AIS Stream Error Response:', message.error);
                     setErrorCode(`API ERROR: ${message.error}`);
                     setStatus('error');
                     return;
                 }
 
-                // Process AIS message
                 if (message.MessageType) {
-                    console.log('📨 Received:', message.MessageType, 'MMSI:', message.MetaData?.MMSI);
+                    console.log('Received:', message.MessageType, 'MMSI:', message.MetaData?.MMSI);
                     setMessages(prev => [...prev.slice(-1000), message]);
                 }
             } catch (e) {
@@ -140,17 +129,14 @@ export const useAISSocket = ({ bbox, enabled = true }: UseAISSocketProps) => {
         };
 
         ws.onclose = (event) => {
-            console.log('❌ Proxy Connection Closed', event.code, event.reason);
+            console.log('Proxy Connection Closed', event.code, event.reason);
             isConnectingRef.current = false;
             setStatus('disconnected');
             setErrorCode(`CLOSED: ${event.code} ${event.reason || 'No Reason'}`);
-
-            // DO NOT auto-reconnect - let proxy handle connection stability
-            // User can manually refresh if needed
         };
 
         ws.onerror = (error) => {
-            console.error('⚠️ Proxy Connection Error', error);
+            console.error('Proxy Connection Error', error);
             isConnectingRef.current = false;
             setStatus('error');
             setErrorCode('PROXY CONNECTION ERROR');
@@ -164,25 +150,21 @@ export const useAISSocket = ({ bbox, enabled = true }: UseAISSocketProps) => {
             return;
         }
 
-        // Clear any pending debounce
         if (debounceTimeoutRef.current) {
             clearTimeout(debounceTimeoutRef.current);
         }
 
-        // Debounce connection to prevent rapid reconnects from React re-renders
         debounceTimeoutRef.current = setTimeout(() => {
             connect();
-        }, 100); // 100ms debounce
+        }, 100);
 
         return () => {
-            // Clear debounce on unmount
             if (debounceTimeoutRef.current) {
                 clearTimeout(debounceTimeoutRef.current);
             }
 
-            // Close connection on unmount
             if (socketRef.current) {
-                console.log('🧹 Cleaning up WebSocket connection');
+                console.log('Cleaning up WebSocket connection');
                 socketRef.current.close();
                 socketRef.current = null;
             }

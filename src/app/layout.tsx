@@ -16,13 +16,9 @@ const shareTechMono = Share_Tech_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Orbital | Maritime Mission Control",
-  description: "Global Maritime Logistics Tracker",
+  title: "ORBITAL | Maritime Command",
+  description: "Real-Time Maritime Domain Awareness System",
 };
-
-import { LanguageProvider } from "@/components/providers/LanguageContext";
-
-// ... existing imports
 
 export default function RootLayout({
   children,
@@ -30,11 +26,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body
         className={`${inter.variable} ${shareTechMono.variable} antialiased bg-background text-foreground overflow-hidden`}
+        suppressHydrationWarning
       >
-        <LanguageProvider>{children}</LanguageProvider>
+        {children}
       </body>
     </html>
   );

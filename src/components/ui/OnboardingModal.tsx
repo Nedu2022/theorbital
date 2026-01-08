@@ -1,14 +1,11 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { X, Globe, Zap, ShieldAlert, BadgeInfo } from "lucide-react";
-import { useLanguage } from "../providers/LanguageContext";
+import { X, Globe, Zap, ShieldAlert } from "lucide-react";
 
 export default function OnboardingModal() {
   const [isOpen, setIsOpen] = useState(false);
-  const { t, direction } = useLanguage();
 
   useEffect(() => {
-    // Check if user has seen onboarding
     const hasSeen = localStorage.getItem("orbital_onboarding_seen");
     if (!hasSeen) {
       setIsOpen(true);
@@ -24,89 +21,92 @@ export default function OnboardingModal() {
 
   return (
     <div className="fixed inset-0 z-[5000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div
-        className="bg-black border border-neon-cyan/50 shadow-[0_0_30px_rgba(0,243,255,0.2)] max-w-lg w-full rounded-sm overflow-hidden"
-        dir={direction}
-      >
-        {/* Header */}
+      <div className="bg-black border border-cyan-500/50 shadow-[0_0_30px_rgba(0,255,255,0.2)] max-w-lg w-full overflow-hidden font-mono">
         <div className="bg-gradient-to-r from-gray-900 to-black p-6 border-b border-gray-800 flex justify-between items-start">
           <div>
-            <h2 className="text-2xl font-black text-white font-mono flex items-center gap-2">
-              <Globe className="text-neon-cyan animate-pulse" />
-              ORBITAL GOD MODE
+            <h2 className="text-2xl font-black text-white flex items-center gap-2 tracking-wider">
+              <Globe className="text-cyan-400 animate-pulse" />
+              ORBITAL
             </h2>
-            <p className="text-gray-400 text-xs mt-1 font-mono tracking-wider">
-              CLASSIFIED SATELLITE FEED ACCESS
+            <p className="text-gray-500 text-xs mt-1 tracking-widest">
+              MARITIME COMMAND INTERFACE
             </p>
           </div>
           <button
             onClick={handleClose}
-            className="text-gray-500 hover:text-white transition-colors"
+            className="text-gray-500 hover:text-white transition-colors cursor-pointer"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-6 space-y-6 font-mono text-sm">
+        <div className="p-6 space-y-6 text-sm">
           <p className="text-gray-300 leading-relaxed">
-            Welcome, Operator. You have been granted access to real-time global
-            maritime intelligence.
+            Welcome, Operator. You have entered{" "}
+            <strong className="text-cyan-400">ORBITAL</strong> — a real-time
+            maritime domain awareness system used to track global logistics,
+            naval assets, and crisis zones.
           </p>
 
           <div className="grid gap-4">
-            <div className="flex items-start gap-3 p-3 bg-gray-900/50 rounded border border-gray-800">
-              <Globe className="w-5 h-5 text-neon-cyan shrink-0 mt-0.5" />
+            <div className="flex items-start gap-3 p-3 bg-gray-900/50 border border-gray-800">
+              <Globe className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
               <div>
-                <h3 className="text-white font-bold mb-1">
-                  Global & Local Scans
+                <h3 className="text-white font-bold mb-1 text-xs tracking-wider">
+                  GLOBAL & LOCAL SCANS
                 </h3>
-                <p className="text-gray-400 text-xs">
-                  Switch between "Global Orbit" for a world view or "Local Scan"
-                  for detailed port operations. Use the Quick Jump menu to
-                  teleport to strategic choke points like Suez or Singapore.
+                <p className="text-gray-500 text-xs">
+                  <strong className="text-gray-300">GLOBAL ORBIT</strong>{" "}
+                  provides a macro-view of world trade routes.{" "}
+                  <strong className="text-gray-300">LOCAL SCAN</strong> focuses
+                  on high-fidelity port operations.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-3 bg-gray-900/50 rounded border border-gray-800">
+            <div className="flex items-start gap-3 p-3 bg-gray-900/50 border border-gray-800">
               <Zap className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
               <div>
-                <h3 className="text-white font-bold mb-1">
-                  Live Asset Tracking
+                <h3 className="text-white font-bold mb-1 text-xs tracking-wider">
+                  LIVE ASSET TRACKING
                 </h3>
-                <p className="text-gray-400 text-xs">
-                  <span className="text-green-400">Green Dots</span> = Moving
-                  Assets. <br />
-                  <span className="text-yellow-400">Yellow Dots</span> =
-                  Anchored Vessels. <br />
-                  Click any ship to view its manifest, speed, and destination in
-                  real-time.
+                <p className="text-gray-500 text-xs">
+                  Real-time AIS data stream processing.
+                  <br />
+                  <span className="text-green-400">● UNDERWAY</span>: Active
+                  vessels en route.
+                  <br />
+                  <span className="text-yellow-400">● AT ANCHOR</span>: Vessels
+                  stationary at anchorage.
+                  <br />
+                  Select any target for detailed manifest, velocity, and ETA.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-3 bg-gray-900/50 rounded border border-gray-800">
+            <div className="flex items-start gap-3 p-3 bg-gray-900/50 border border-gray-800">
               <ShieldAlert className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
               <div>
-                <h3 className="text-white font-bold mb-1">Crisis Simulation</h3>
-                <p className="text-gray-400 text-xs">
-                  Activate "Crisis Mode" to visualize high-risk zones (e.g., Red
-                  Sea Piracy) and analyze supply chain impact.
+                <h3 className="text-white font-bold mb-1 text-xs tracking-wider">
+                  CRISIS SIMULATION
+                </h3>
+                <p className="text-gray-500 text-xs">
+                  Advanced predictive modeling for high-risk zones. Visualize
+                  piracy impacts, choke point blockages (Suez, Panama), and
+                  supply chain disruptions.
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
         <div className="p-6 pt-0">
           <button
             onClick={handleClose}
-            className="w-full py-3 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan font-bold hover:bg-neon-cyan hover:text-black transition-all rounded-sm flex items-center justify-center gap-2 group"
+            className="group w-full py-3 bg-cyan-500/20 border border-cyan-500 text-cyan-400 font-bold hover:bg-cyan-500 hover:text-black transition-all flex items-center justify-center gap-2 cursor-pointer tracking-wider"
           >
             <span>INITIALIZE DASHBOARD</span>
-            <Zap className="w-4 h-4 group-hover:fill-current" />
+            <Zap className="w-4 h-4 group-hover:fill-black transition-colors" />
           </button>
         </div>
       </div>

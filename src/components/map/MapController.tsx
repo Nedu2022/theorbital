@@ -6,7 +6,7 @@ interface MapControllerProps {
 }
 
 const ZONES: Record<string, { center: [number, number]; zoom: number }> = {
-  global: { center: [32.0, 30.0], zoom: 3 }, // Mapbox uses [lng, lat]
+  global: { center: [32.0, 30.0], zoom: 3 },
   suez: { center: [32.265, 30.5852], zoom: 10 },
   rotterdam: { center: [4.0, 51.95], zoom: 11 },
   singapore: { center: [103.85, 1.25], zoom: 11 },
@@ -25,8 +25,8 @@ export default function MapController({ targetZone }: MapControllerProps) {
       map.flyTo({
         center: center,
         zoom: zoom,
-        duration: 2000, // 2s duration
-        essential: true, // Ensures smooth transition
+        duration: 2000,
+        essential: true,
       });
     }
   }, [targetZone, map]);

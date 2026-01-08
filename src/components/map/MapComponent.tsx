@@ -10,13 +10,10 @@ import DeckGLOverlay from "./DeckGLOverlay";
 import MapLegend from "./MapLegend";
 import { useEffect, useState } from "react";
 import { MergedShip } from "@/hooks/useShipData";
-import { useLanguage } from "@/components/providers/LanguageContext";
 import OnboardingModal from "../ui/OnboardingModal";
 
-// Token should be in .env.local
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
-// Helper for status color (duplicate of logic in overlay, but needed for popup UI)
 const getStatusColor = (status: number) => {
   switch (status) {
     case 0:
@@ -30,21 +27,29 @@ const getStatusColor = (status: number) => {
   }
 };
 
+const getStatusLabel = (status: number) => {
+  switch (status) {
+    case 0:
+      return "UNDERWAY";
+    case 1:
+      return "AT ANCHOR";
+    case 5:
+      return "MOORED";
+    default:
+      return "UNKNOWN";
+  }
+};
+
 const ATTRIBUTION =
   '<a href="https://www.mapbox.com/about/maps/" target="_blank">&copy; Mapbox</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap</a>';
 
 export default function MapComponent() {
-  /* View Mode & BBox Logic */
   const [viewMode, setViewMode] = useState<"global" | "local">("global");
 
-  // Default to Rotterdam (busy port)
   const ROTTERDAM_BBOX: [number, number, number, number] = [
     51.5, 3.0, 52.5, 5.0,
   ];
 
-  // Logic:
-  // If global -> undefined (hook handles this as global request)
-  // If local -> use Rotterdam fallback
   const currentBBox: [number, number, number, number] | undefined =
     viewMode === "global" ? undefined : ROTTERDAM_BBOX;
 
@@ -52,28 +57,35 @@ export default function MapComponent() {
     useShipData(currentBBox);
 
   const [mounted, setMounted] = useState(false);
-  const [activeZone, setActiveZone] = useState<string | null>("global"); // Default to global zone
+  const [activeZone, setActiveZone] = useState<string | null>("global");
   const [crisisActive, setCrisisActive] = useState(false);
   const [selectedShip, setSelectedShip] = useState<MergedShip | null>(null);
+  const [watchlist, setWatchlist] = useState<MergedShip[]>([]);
 
-  // Geo-Fencing & Crisis Logic
+  const addToWatchlist = (ship: MergedShip) => {
+    setWatchlist((prev) => {
+      if (prev.find((s) => s.mmsi === ship.mmsi)) return prev;
+      return [...prev, ship];
+    });
+  };
+
+  const removeFromWatchlist = (mmsi: string) => {
+    setWatchlist((prev) => prev.filter((s) => s.mmsi !== mmsi));
+  };
+
+  const isInWatchlist = (mmsi: string) => {
+    return watchlist.some((s) => s.mmsi === mmsi);
+  };
+
   const { zones, impactedShips, riskLevel } = useGeofencing(
     ships,
     crisisActive
   );
 
-  const { t, direction, toggleLanguage, language } = useLanguage();
-
-  // RTL/LTR Position Classes
-  const leftPanelClass = direction === "rtl" ? "right-4" : "left-4";
-  const rightPanelClass =
-    direction === "rtl" ? "left-4 md:left-6" : "right-4 md:right-6";
-
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Sync ViewMode with Map Controller
   const handleViewModeChange = (mode: "global" | "local") => {
     setViewMode(mode);
     if (mode === "global") {
@@ -86,14 +98,11 @@ export default function MapComponent() {
   const handleCrisisToggle = () => {
     setCrisisActive(!crisisActive);
     if (!crisisActive) {
-      // Play clean alert sound (mock)
       const audio = new Audio(
         "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
       );
       audio.volume = 0.5;
       audio.play().catch((e) => console.log("Audio autoplay blocked", e));
-
-      // Auto-switch to global view to see the crisis zones (Red Sea is far)
       handleViewModeChange("global");
     }
   };
@@ -123,7 +132,6 @@ export default function MapComponent() {
         crisisActive ? "animate-pulse ring-4 ring-inset ring-red-600" : ""
       }`}
     >
-      {/* Crisis Overlay */}
       {crisisActive && (
         <div className="absolute inset-0 z-[2000] pointer-events-none flex items-center justify-center bg-red-900/10">
           <div className="bg-red-600 text-black font-black text-4xl md:text-6xl px-8 md:px-12 py-4 md:py-6 transform -rotate-12 border-4 border-black shadow-2xl animate-bounce text-center flex flex-col items-center">
@@ -137,102 +145,89 @@ export default function MapComponent() {
 
       <OnboardingModal />
 
-      {/* HUD Overlay - Top Left/Right */}
-      <div
-        className={`absolute top-4 ${leftPanelClass} z-[1000] pointer-events-none transition-all duration-300`}
-      >
-        <div className="flex items-center space-x-4 pointer-events-auto">
-          <h1 className="text-2xl md:text-4xl font-black font-mono tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan to-blue-600 drop-shadow-[0_0_10px_rgba(0,243,255,0.5)]">
-            {t("orbital")}
-          </h1>
-          <button
-            onClick={toggleLanguage}
-            className="text-[10px] font-bold border border-gray-700 bg-black/50 text-gray-300 px-2 py-1 rounded hover:border-neon-cyan hover:text-neon-cyan transition-colors"
-          >
-            {language === "en" ? "AR" : "EN"}
-          </button>
+      <div className="absolute top-4 left-4 z-[1000] pointer-events-none transition-all duration-300">
+        <div className="flex items-center gap-3 pointer-events-auto">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(0,255,255,0.8)]" />
+            <h1 className="text-xl md:text-2xl font-black text-white font-mono tracking-wider">
+              ORBITAL
+            </h1>
+          </div>
+          <div className="hidden md:block h-6 w-px bg-gray-600" />
+          <span className="hidden md:block text-xs text-gray-400 font-mono tracking-widest">
+            MARITIME COMMAND
+          </span>
         </div>
 
-        <div className="text-[10px] md:text-xs font-mono text-neon-cyan/70 tracking-widest mt-1">
-          {t("global_maritime_logistics")}
-        </div>
-
-        {/* View Toggle */}
-        <div className="flex space-x-2 mt-4 pointer-events-auto">
+        <div className="flex gap-2 mt-3 pointer-events-auto">
           <button
             onClick={() => handleViewModeChange("local")}
-            className={`px-3 py-1 text-[10px] font-bold border ${
+            className={`px-4 py-1.5 text-xs font-mono tracking-wider border transition-all ${
               viewMode === "local"
-                ? "bg-neon-cyan/20 border-neon-cyan text-white shadow-[0_0_10px_rgba(0,243,255,0.3)]"
-                : "border-gray-800 text-gray-500 hover:border-gray-600"
+                ? "bg-cyan-500/20 border-cyan-500 text-cyan-400 shadow-[0_0_10px_rgba(0,255,255,0.3)]"
+                : "bg-black/50 border-gray-700 text-gray-400 hover:border-gray-500"
             }`}
           >
-            {t("local_scan")}
+            LOCAL SCAN
           </button>
           <button
             onClick={() => handleViewModeChange("global")}
-            className={`px-3 py-1 text-[10px] font-bold border ${
+            className={`px-4 py-1.5 text-xs font-mono tracking-wider border transition-all ${
               viewMode === "global"
-                ? "bg-neon-cyan/20 border-neon-cyan text-white shadow-[0_0_10px_rgba(0,243,255,0.3)]"
-                : "border-gray-800 text-gray-500 hover:border-gray-600"
+                ? "bg-cyan-500/20 border-cyan-500 text-cyan-400 shadow-[0_0_10px_rgba(0,255,255,0.3)]"
+                : "bg-black/50 border-gray-700 text-gray-400 hover:border-gray-500"
             }`}
           >
-            {t("global_orbit")}
+            GLOBAL ORBIT
           </button>
         </div>
       </div>
-      {/* Control Panel (Interactive) */}
+
       <ControlPanel
         onZoneChange={setActiveZone}
         onCrisisTrigger={handleCrisisToggle}
         crisisActive={crisisActive}
         selectedShip={selectedShip}
+        watchlist={watchlist}
+        onAddToWatchlist={addToWatchlist}
+        onRemoveFromWatchlist={removeFromWatchlist}
       />
-      {/* Connection Monitor - Bottom Right */}
-      <div className="absolute bottom-20 md:bottom-6 right-4 md:right-6 z-[1000] bg-black/80 backdrop-blur border border-gray-800 p-2 md:p-3 rounded-sm pointer-events-none">
-        <div className="flex flex-col space-y-1 font-mono text-[10px] md:text-xs">
-          <div className="flex items-center space-x-2">
+
+      <div className="absolute bottom-12 md:bottom-6 right-3 md:right-6 z-[1000] pointer-events-none">
+        <div className="bg-black/80 border border-gray-700 px-3 py-2 flex items-center gap-3 font-mono text-xs">
+          <div className="flex items-center gap-2">
             <div
               className={`w-2 h-2 rounded-full ${
                 connectionStatus === "connected"
-                  ? "bg-green-500 animate-pulse"
+                  ? "bg-green-500 shadow-[0_0_8px_rgba(0,255,0,0.8)] animate-pulse"
                   : "bg-red-500"
               }`}
-            ></div>
-            <span
-              className={
-                connectionStatus === "connected"
-                  ? "text-green-500"
-                  : "text-red-500"
-              }
-            >
-              {connectionStatus === "connected" ? "LIVE" : "OFF"}
+            />
+            <span className="text-gray-400">
+              {connectionStatus === "connected" ? "UPLINK ACTIVE" : "OFFLINE"}
             </span>
           </div>
-          <div className="flex justify-between text-gray-400 space-x-4">
-            <span>PING:</span>
-            <span>{latency}ms</span>
-          </div>
-          <div className="flex justify-between text-gray-400 space-x-4">
-            <span>SHIPS:</span>
-            <span>{ships.length}</span>
-          </div>
+          <div className="h-4 w-px bg-gray-700" />
+          <span className="text-cyan-400">{ships.length} TRACKED</span>
+          <div className="h-4 w-px bg-gray-700" />
+          <span className="text-gray-500">{latency.toFixed(0)}ms</span>
         </div>
       </div>
-      {/* Map Legend */}
+
       <MapLegend />
+
       <MapProvider>
         <Map
           initialViewState={{
-            longitude: 0, // Global center
-            latitude: 20, // Slightly north to show more land
-            zoom: 1.5, // Zoomed out
+            longitude: 0,
+            latitude: 20,
+            zoom: 1.5,
           }}
           style={{ width: "100%", height: "100%" }}
           mapStyle="mapbox://styles/mapbox/dark-v11"
           mapboxAccessToken={MAPBOX_TOKEN}
           attributionControl={false}
-          onClick={() => setSelectedShip(null)} // Click map to deselect
+          onClick={() => setSelectedShip(null)}
           reuseMaps
         >
           <MapController targetZone={activeZone} />
@@ -252,62 +247,75 @@ export default function MapComponent() {
               closeButton={false}
               closeOnClick={false}
               anchor="bottom"
-              className="military-popup z-[2000] max-w-[280px]"
+              className="military-popup z-[2000] max-w-[300px]"
             >
-              <div className="bg-black/90 border border-neon-cyan/50 backdrop-blur-md p-3 min-w-[200px] shadow-[0_0_15px_rgba(0,243,255,0.2)] rounded-sm text-left">
-                <div className="flex justify-between items-start border-b border-gray-800 pb-2 mb-2">
-                  <div className="overflow-hidden">
-                    <h3 className="font-mono text-neon-cyan font-bold text-sm leading-tight text-white truncate max-w-[120px]">
-                      {selectedShip.name || selectedShip.mmsi}
+              <div className="bg-black border border-cyan-500/50 p-4 min-w-[250px] font-mono shadow-[0_0_20px_rgba(0,255,255,0.2)]">
+                <div className="flex justify-between items-start mb-3 border-b border-gray-700 pb-2">
+                  <div>
+                    <h3 className="font-bold text-cyan-400 text-sm tracking-wider">
+                      {selectedShip.name || "UNKNOWN VESSEL"}
                     </h3>
-                    <p className="text-[10px] text-gray-400 font-mono tracking-wider">
-                      {selectedShip.mmsi}
+                    <p className="text-xs text-gray-500">
+                      MMSI: {selectedShip.mmsi}
                     </p>
                   </div>
-                  <div className="text-right shrink-0 ml-2">
-                    <div
-                      className="text-[10px] font-bold font-mono px-1 py-0.5 border"
-                      style={{
-                        color: getStatusColor(selectedShip.status),
-                        borderColor: getStatusColor(selectedShip.status),
-                      }}
-                    >
-                      {selectedShip.status === 0
-                        ? "UND"
-                        : selectedShip.status === 1
-                        ? "ANC"
-                        : "MOR"}
-                    </div>
-                  </div>
+                  <span
+                    className="text-xs font-bold px-2 py-1 border"
+                    style={{
+                      borderColor: getStatusColor(selectedShip.status),
+                      color: getStatusColor(selectedShip.status),
+                    }}
+                  >
+                    {getStatusLabel(selectedShip.status)}
+                  </span>
                 </div>
 
-                <div className="space-y-1 font-mono text-xs text-gray-300">
+                <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">TYP:</span>
-                    <span className="truncate max-w-[100px] text-right">
-                      {selectedShip.type || "N/A"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">DST:</span>
-                    <span className="text-white truncate max-w-[100px] text-right">
-                      {selectedShip.destination || "Unknown"}
+                    <span className="text-gray-500">DESTINATION</span>
+                    <span className="text-white">
+                      {selectedShip.destination || "CLASSIFIED"}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">ETA:</span>
-                    <span className="text-neon-yellow">
-                      {selectedShip.eta?.split(" ")[0] || "--/--"}
+                    <span className="text-gray-500">SPEED</span>
+                    <span className="text-white">
+                      {selectedShip.sog.toFixed(1)} KTS
                     </span>
                   </div>
-                  <div className="flex justify-between mt-2 pt-2 border-t border-gray-800">
-                    <span className="text-gray-500">SOG:</span>
-                    <span className="font-bold">
-                      {selectedShip.sog.toFixed(1)}{" "}
-                      <span className="text-[9px] text-gray-500">KN</span>
-                    </span>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">HEADING</span>
+                    <span className="text-white">{selectedShip.heading}°</span>
                   </div>
+                  {selectedShip.eta && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">ETA</span>
+                      <span className="text-white">
+                        {selectedShip.eta.split(" ")[0]}
+                      </span>
+                    </div>
+                  )}
                 </div>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isInWatchlist(selectedShip.mmsi)) {
+                      removeFromWatchlist(selectedShip.mmsi);
+                    } else {
+                      addToWatchlist(selectedShip);
+                    }
+                  }}
+                  className={`w-full mt-4 py-2 text-xs font-bold tracking-wider border transition-all ${
+                    isInWatchlist(selectedShip.mmsi)
+                      ? "bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500/30"
+                      : "bg-cyan-500/20 border-cyan-500 text-cyan-400 hover:bg-cyan-500/30"
+                  }`}
+                >
+                  {isInWatchlist(selectedShip.mmsi)
+                    ? "− REMOVE FROM WATCHLIST"
+                    : "+ ADD TO WATCHLIST"}
+                </button>
               </div>
             </Popup>
           )}
