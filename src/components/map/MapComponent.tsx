@@ -31,11 +31,11 @@ const getStatusColor = (status: number) => {
 const getStatusLabel = (status: number) => {
   switch (status) {
     case 0:
-      return "UNDERWAY";
+      return "MOVING";
     case 1:
-      return "AT ANCHOR";
+      return "STOPPED";
     case 5:
-      return "MOORED";
+      return "DOCKED";
     default:
       return "UNKNOWN";
   }
