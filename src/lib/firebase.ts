@@ -1,5 +1,5 @@
-import { initializeApp, getApps } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp, getApps, FirebaseApp } from "firebase/app";
+import { getFirestore, Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -11,8 +11,19 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app =
-    getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const db = getFirestore(app);
+let app: FirebaseApp | undefined;
+let db: Firestore | undefined;
+
+try {
+    // Only initialize if we have a project ID (minimal check)
+    if (firebaseConfig.projectId) {
+        app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+        db = getFirestore(app);
+    } else {
+        console.warn("⚠️ Firebase Config missing. View Counter will be disabled.");
+    }
+} catch (error) {
+    console.error("❌ Firebase initialization failed:", error);
+}
 
 export { app, db };

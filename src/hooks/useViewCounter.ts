@@ -7,8 +7,14 @@ export function useViewCounter() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Only run on client side
+        // Only run on client side and if db is initialized
         if (typeof window === "undefined") return;
+
+        if (!db) {
+            console.warn("Firestore not initialized");
+            setLoading(false);
+            return;
+        }
 
         const counterRef = doc(db, "stats", "views");
 
@@ -27,8 +33,6 @@ export function useViewCounter() {
         // Increment if first visit in this session
         const hasViewed = sessionStorage.getItem("orbital_viewed");
         if (!hasViewed) {
-            // Use updateDoc with increment for atomic updates
-            // Check existence first to be safe, though setDoc above handles init
             getDoc(counterRef).then((snap) => {
                 if (snap.exists()) {
                     updateDoc(counterRef, {

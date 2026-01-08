@@ -11,6 +11,7 @@ import MapLegend from "./MapLegend";
 import { useEffect, useState } from "react";
 import { MergedShip } from "@/hooks/useShipData";
 import OnboardingModal from "../ui/OnboardingModal";
+import { getCountryFromDestination } from "@/utils/countryMapper";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
@@ -277,6 +278,21 @@ export default function MapComponent() {
                       {selectedShip.destination || "CLASSIFIED"}
                     </span>
                   </div>
+                  {getCountryFromDestination(selectedShip.destination) && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">REGION</span>
+                      <span className="text-cyan-300">
+                        {
+                          getCountryFromDestination(selectedShip.destination)
+                            ?.flag
+                        }{" "}
+                        {
+                          getCountryFromDestination(selectedShip.destination)
+                            ?.country
+                        }
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-gray-500">SPEED</span>
                     <span className="text-white">
