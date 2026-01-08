@@ -11,6 +11,7 @@ import {
   Crosshair,
 } from "lucide-react";
 import { MergedShip } from "@/hooks/useShipData";
+import ViewCounter from "@/components/ui/ViewCounter";
 
 interface ControlPanelProps {
   onZoneChange: (zone: string) => void;
@@ -206,6 +207,8 @@ export default function ControlPanel({
               )}
             </div>
           )}
+        <div className="p-3 border-t border-gray-800 bg-black/50">
+           <ViewCounter />
         </div>
       </div>
     </>
