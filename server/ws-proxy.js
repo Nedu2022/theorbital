@@ -1,15 +1,20 @@
-
-
 const WebSocket = require("ws");
 const http = require("http");
-require("dotenv").config({ path: ".env.local" });
 
-const PORT = process.env.WS_PROXY_PORT || 3001;
-const AIS_API_KEY = process.env.NEXT_PUBLIC_AISSTREAM_API_KEY;
-const HEARTBEAT_INTERVAL = 30000; 
-const RECONNECT_BASE_DELAY = 1000; 
-const RECONNECT_MAX_DELAY = 30000; 
-const DISCONNECT_GRACE_PERIOD = 5000; 
+// Load .env.local for local dev, but Railway uses its own env vars
+try {
+  require("dotenv").config({ path: ".env.local" });
+} catch (e) {
+  // dotenv not available in production, that's fine
+}
+
+const PORT = process.env.PORT || process.env.WS_PROXY_PORT || 3001;
+const AIS_API_KEY =
+  process.env.AISSTREAM_API_KEY || process.env.NEXT_PUBLIC_AISSTREAM_API_KEY;
+const HEARTBEAT_INTERVAL = 30000;
+const RECONNECT_BASE_DELAY = 1000;
+const RECONNECT_MAX_DELAY = 30000;
+const DISCONNECT_GRACE_PERIOD = 5000;
 
 if (!AIS_API_KEY) {
   console.error(
@@ -19,7 +24,6 @@ if (!AIS_API_KEY) {
 }
 
 console.log("🔑 API Key loaded:", "..." + AIS_API_KEY.slice(-4));
-
 
 class AISStreamManager {
   constructor() {
@@ -81,7 +85,7 @@ class AISStreamManager {
       if (msgStr.includes("error") || msgStr.includes("Error")) {
         console.error("🔥 UPSTREAM SENT ERROR:", msgStr);
       } else if (Math.random() < 0.1) {
-        console.log("📨 Upstream sample:", msgStr.slice(0, 500)); 
+        console.log("📨 Upstream sample:", msgStr.slice(0, 500));
       }
 
       // Broadcast AIS messages to all connected browser clients
@@ -369,11 +373,11 @@ wss.on("connection", (clientWs, request) => {
   });
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`✅ WebSocket Proxy Server listening on port ${PORT}`);
   console.log(
-    `✅ WebSocket Proxy Server listening on http://localhost:${PORT}`
+    `📡 Clients can connect to: wss://YOUR_RAILWAY_URL or ws://localhost:${PORT}`
   );
-  console.log(`📡 Browser should connect to: ws://localhost:${PORT}`);
   console.log(`🔐 API Key is hidden from browser`);
   console.log(`♻️  Connection pooling: ENABLED with 5s GRACE PERIOD`);
 });
