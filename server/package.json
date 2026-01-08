@@ -1,0 +1,12 @@
+{
+  "name": "orbital-proxy",
+  "version": "1.0.0",
+  "main": "ws-proxy.js",
+  "scripts": {
+    "start": "node ws-proxy.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.3",
+    "dotenv": "^17.2.3"
+  }
+}
