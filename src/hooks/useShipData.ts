@@ -18,10 +18,8 @@ export interface MergedShip {
     callSign?: string;
 }
 
-const AIS_API_KEY = process.env.NEXT_PUBLIC_AISSTREAM_API_KEY;
-
 export const useShipData = (bbox?: [number, number, number, number]) => {
-    const { messages, status: socketStatus, errorCode } = useAISSocket({
+    const { messages, status: socketStatus, errorCode, startDemoMode } = useAISSocket({
         bbox,
         enabled: true
     });
@@ -35,9 +33,7 @@ export const useShipData = (bbox?: [number, number, number, number]) => {
             setConnectionStatus('connected');
         } else if (socketStatus === 'demo') {
             setConnectionStatus('connected');
-        } else if (socketStatus === 'error') {
-            setConnectionStatus('disconnected');
-        } else if (socketStatus === 'disconnected') {
+        } else if (socketStatus === 'error' || socketStatus === 'disconnected') {
             setConnectionStatus('disconnected');
         } else {
             setConnectionStatus('connecting');
@@ -109,6 +105,7 @@ export const useShipData = (bbox?: [number, number, number, number]) => {
             window.location.reload();
         },
         errorCode,
-        isSimulation: socketStatus === 'demo'
+        isSimulation: socketStatus === 'demo',
+        enableSimulation: startDemoMode
     };
 };

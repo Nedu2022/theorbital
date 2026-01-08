@@ -209,15 +209,23 @@ export default function MapComponent() {
             <span className="text-gray-400">
               {connectionStatus === "connected"
                 ? isSimulation
-                  ? "SIMULATION ACTIVE"
+                  ? "SIMULATION"
                   : "UPLINK ACTIVE"
                 : "OFFLINE"}
             </span>
           </div>
-          <div className="h-4 w-px bg-gray-700" />
-          <span className="text-cyan-400">{ships.length} TRACKED</span>
-          <div className="h-4 w-px bg-gray-700" />
-          <span className="text-gray-500">{latency.toFixed(0)}ms</span>
+          {ships.length > 0 && (
+            <>
+              <div className="h-4 w-px bg-gray-700" />
+              <span className="text-cyan-400">{ships.length} TRACKED</span>
+            </>
+          )}
+          {connectionStatus === "connected" && (
+            <>
+              <div className="h-4 w-px bg-gray-700" />
+              <span className="text-gray-500">{latency.toFixed(0)}ms</span>
+            </>
+          )}
         </div>
       </div>
 

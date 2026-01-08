@@ -107,13 +107,15 @@ export const useAISSocket = ({ bbox, enabled = true }: UseAISSocketProps) => {
         isConnectingRef.current = true;
         setStatus('connecting');
 
-        // Check if we are in production environment (firebase hosting)
+        // PRODUCTION: DO NOT AUTO CONNECT TO LOCALHOST
+        // We only connect if process.env.NEXT_PUBLIC_FORCE_LIVE is set.
+        // Otherwise, we wait for user to trigger demo mode or just stay offline.
         const isProduction = typeof window !== 'undefined' && window.location.hostname.includes('web.app');
-
-        // In production, fast-fail to demo mode unless specific override
         if (isProduction && !process.env.NEXT_PUBLIC_FORCE_LIVE) {
-            startDemoMode();
+            console.log("Production environment detected. Not connecting to localhost proxy.");
             isConnectingRef.current = false;
+            setStatus('disconnected');
+            // We do NOT auto-start demo mode anymore. User must opt-in.
             return;
         }
 
@@ -128,9 +130,9 @@ export const useAISSocket = ({ bbox, enabled = true }: UseAISSocketProps) => {
                 if (ws.readyState !== WebSocket.OPEN) {
                     console.warn("WebSocket connection timed out.");
                     ws.close();
-                    startDemoMode();
+                    setStatus('disconnected'); // Just disconnect, don't force demo
                 }
-            }, 3000); // 3 seconds timeout
+            }, 3000);
 
             ws.onopen = () => {
                 clearTimeout(timeoutId);
@@ -153,7 +155,6 @@ export const useAISSocket = ({ bbox, enabled = true }: UseAISSocketProps) => {
             ws.onmessage = (event) => {
                 try {
                     const message = JSON.parse(event.data);
-                    // ... existing message handling ...
                     if (message.MessageType) {
                         setMessages(prev => [...prev.slice(-1000), message]);
                     }
@@ -166,28 +167,22 @@ export const useAISSocket = ({ bbox, enabled = true }: UseAISSocketProps) => {
                 clearTimeout(timeoutId);
                 console.log('Proxy Connection Closed', event.code);
                 isConnectingRef.current = false;
-                // If it wasn't a clean close, try fallback
-                if (event.code !== 1000) {
-                    startDemoMode();
-                } else {
-                    setStatus('disconnected');
-                }
+                setStatus('disconnected');
             };
 
             ws.onerror = (error) => {
                 console.error('Proxy Connection Error');
                 isConnectingRef.current = false;
-                // Don't set error state, just transition to demo
-                startDemoMode();
+                setStatus('disconnected');
             };
 
             socketRef.current = ws;
 
         } catch (err) {
             console.error("Immediate socket error", err);
-            startDemoMode();
+            setStatus('disconnected');
         }
-    }, [enabled, bboxKey, startDemoMode]);
+    }, [enabled, bboxKey]); // Removed startDemoMode dependency
 
 
     useEffect(() => {
@@ -206,5 +201,10 @@ export const useAISSocket = ({ bbox, enabled = true }: UseAISSocketProps) => {
         };
     }, [connect, enabled]);
 
-    return { messages, status, errorCode };
+    return {
+        messages,
+        status,
+        errorCode,
+        startDemoMode // Exposed for manual trigger
+    };
 };
