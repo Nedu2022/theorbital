@@ -79,4 +79,4 @@ The application is configured for static export to ensure maximum availability a
 
 ---
 
-_© 2026 The Orbital. Internal Use Only._
+_© 2026 The Orbital. Internal Use Only. Built by nnedu._

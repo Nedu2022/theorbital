@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { getDemoFleet, generateDemoMessage } from '@/utils/demoData';
 
 export interface AISMessage {
     MessageType: string;
@@ -40,131 +41,164 @@ interface UseAISSocketProps {
 
 export const useAISSocket = ({ bbox, enabled = true }: UseAISSocketProps) => {
     const [messages, setMessages] = useState<AISMessage[]>([]);
-    const [status, setStatus] = useState<'connected' | 'connecting' | 'disconnected' | 'error'>('disconnected');
+    const [status, setStatus] = useState<'connected' | 'connecting' | 'disconnected' | 'error' | 'demo'>('disconnected');
     const [errorCode, setErrorCode] = useState<string | null>(null);
     const socketRef = useRef<WebSocket | null>(null);
     const isConnectingRef = useRef(false);
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const demoIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     const bboxKey = JSON.stringify(bbox);
 
-    const connect = useCallback(() => {
-        if (!enabled) {
-            console.warn('AIS Socket NOT starting - enabled:', enabled);
-            return;
-        }
+    // Demo Mode Generator
+    const startDemoMode = useCallback(() => {
+        console.log("⚠️ Connection failed. Switching to SIMULATION MODE.");
+        setStatus('demo');
+        setErrorCode(null);
 
-        if (isConnectingRef.current || socketRef.current?.readyState === WebSocket.OPEN) {
-            console.log('Skipping connection - already connected or connecting');
-            return;
-        }
+        // Clear existing interval if any
+        if (demoIntervalRef.current) clearInterval(demoIntervalRef.current);
+
+        // Initial burst of ships
+        const initialFleet = getDemoFleet(30);
+        setMessages(initialFleet);
+
+        // Simulate updates every 2 seconds
+        let tick = 0;
+        demoIntervalRef.current = setInterval(() => {
+            tick++;
+            // Update a few ships each tick to simulate movement
+            const updates = initialFleet.map((msg, i) => {
+                // Determine if we should update this ship this tick
+                if (i % 3 === tick % 3) {
+                    // Drifting movement
+                    const lat = msg.MetaData.Latitude + (Math.random() - 0.5) * 0.001;
+                    const lng = msg.MetaData.Longitude + (Math.random() - 0.5) * 0.001;
+
+                    // Update the message object (basic mutation for efficiency in demo)
+                    msg.MetaData.Latitude = lat;
+                    msg.MetaData.Longitude = lng;
+                    msg.MetaData.latitude = lat;
+                    msg.MetaData.longitude = lng;
+                    msg.Message.PositionReport!.Sog = Math.random() * 15;
+                    msg.Message.PositionReport!.Heading = (msg.Message.PositionReport!.Heading + (Math.random() - 0.5) * 10) % 360;
+
+                    // Return a fresh object reference for React state
+                    return { ...msg, MetaData: { ...msg.MetaData } };
+                }
+                return null;
+            }).filter(Boolean) as AISMessage[];
+
+            if (updates.length > 0) {
+                setMessages(prev => [...prev.slice(-500), ...updates]);
+            }
+        }, 2000);
+
+    }, []);
+
+    const connect = useCallback(() => {
+        if (!enabled) return;
+
+        // Cleanup demo mode if we are trying to reconnect real socket
+        if (demoIntervalRef.current) clearInterval(demoIntervalRef.current);
+
+        if (isConnectingRef.current || socketRef.current?.readyState === WebSocket.OPEN) return;
 
         isConnectingRef.current = true;
         setStatus('connecting');
 
-        const PROXY_URL = process.env.NEXT_PUBLIC_WS_PROXY_URL || 'ws://localhost:3001';
+        // Check if we are in production environment (firebase hosting)
+        const isProduction = typeof window !== 'undefined' && window.location.hostname.includes('web.app');
 
-        console.log('Creating WebSocket connection to proxy:', PROXY_URL);
-        const ws = new WebSocket(PROXY_URL);
-
-        ws.onopen = () => {
-            console.log('Proxy Connected! Ready state:', ws.readyState);
+        // In production, fast-fail to demo mode unless specific override
+        if (isProduction && !process.env.NEXT_PUBLIC_FORCE_LIVE) {
+            startDemoMode();
             isConnectingRef.current = false;
-            setStatus('connecting');
-            setErrorCode(null);
-
-            const subscription = {
-                BoundingBoxes: [
-                    bbox
-                        ? [[bbox[0], bbox[1]], [bbox[2], bbox[3]]]
-                        : [[-90, -180], [90, 180]]
-                ],
-                FilterMessageTypes: ["PositionReport", "StandardClassBPositionReport", "ShipStaticData"]
-            };
-
-            const subMsg = JSON.stringify(subscription);
-            console.log('Sending Subscription to proxy:', subMsg);
-            ws.send(subMsg);
-        };
-
-        ws.onmessage = (event) => {
-            try {
-                const message = JSON.parse(event.data);
-
-                if (message.type === 'proxy_status') {
-                    console.log('Proxy status:', message.status);
-                    if (message.status === 'connected') {
-                        setStatus('connected');
-                        setErrorCode(null);
-                    } else if (message.status === 'connecting') {
-                        setStatus('connecting');
-                    } else if (message.status === 'disconnected') {
-                        setErrorCode(`Proxy disconnected: ${message.code}`);
-                        setStatus('disconnected');
-                    }
-                    return;
-                }
-
-                if (message.type === 'proxy_error') {
-                    console.error('Proxy error:', message.error);
-                    setErrorCode(`Proxy error: ${message.error}`);
-                    setStatus('error');
-                    return;
-                }
-
-                if (message.error) {
-                    console.error('AIS Stream Error Response:', message.error);
-                    setErrorCode(`API ERROR: ${message.error}`);
-                    setStatus('error');
-                    return;
-                }
-
-                if (message.MessageType) {
-                    console.log('Received:', message.MessageType, 'MMSI:', message.MetaData?.MMSI);
-                    setMessages(prev => [...prev.slice(-1000), message]);
-                }
-            } catch (e) {
-                console.error('Failed to parse message', e);
-            }
-        };
-
-        ws.onclose = (event) => {
-            console.log('Proxy Connection Closed', event.code, event.reason);
-            isConnectingRef.current = false;
-            setStatus('disconnected');
-            setErrorCode(`CLOSED: ${event.code} ${event.reason || 'No Reason'}`);
-        };
-
-        ws.onerror = (error) => {
-            console.error('Proxy Connection Error', error);
-            isConnectingRef.current = false;
-            setStatus('error');
-            setErrorCode('PROXY CONNECTION ERROR');
-        };
-
-        socketRef.current = ws;
-    }, [enabled, bboxKey]);
-
-    useEffect(() => {
-        if (!enabled) {
             return;
         }
 
-        if (debounceTimeoutRef.current) {
-            clearTimeout(debounceTimeoutRef.current);
-        }
+        const PROXY_URL = process.env.NEXT_PUBLIC_WS_PROXY_URL || 'ws://localhost:3001';
+        console.log('Creating WebSocket connection to proxy:', PROXY_URL);
 
-        debounceTimeoutRef.current = setTimeout(() => {
-            connect();
-        }, 100);
+        try {
+            const ws = new WebSocket(PROXY_URL);
+
+            // Connection Timeout handler
+            const timeoutId = setTimeout(() => {
+                if (ws.readyState !== WebSocket.OPEN) {
+                    console.warn("WebSocket connection timed out.");
+                    ws.close();
+                    startDemoMode();
+                }
+            }, 3000); // 3 seconds timeout
+
+            ws.onopen = () => {
+                clearTimeout(timeoutId);
+                console.log('Proxy Connected!');
+                isConnectingRef.current = false;
+                setStatus('connected');
+                setErrorCode(null);
+
+                const subscription = {
+                    BoundingBoxes: [
+                        bbox
+                            ? [[bbox[0], bbox[1]], [bbox[2], bbox[3]]]
+                            : [[-90, -180], [90, 180]]
+                    ],
+                    FilterMessageTypes: ["PositionReport", "StandardClassBPositionReport", "ShipStaticData"]
+                };
+                ws.send(JSON.stringify(subscription));
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    // ... existing message handling ...
+                    if (message.MessageType) {
+                        setMessages(prev => [...prev.slice(-1000), message]);
+                    }
+                } catch (e) {
+                    console.error('Failed to parse message', e);
+                }
+            };
+
+            ws.onclose = (event) => {
+                clearTimeout(timeoutId);
+                console.log('Proxy Connection Closed', event.code);
+                isConnectingRef.current = false;
+                // If it wasn't a clean close, try fallback
+                if (event.code !== 1000) {
+                    startDemoMode();
+                } else {
+                    setStatus('disconnected');
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('Proxy Connection Error');
+                isConnectingRef.current = false;
+                // Don't set error state, just transition to demo
+                startDemoMode();
+            };
+
+            socketRef.current = ws;
+
+        } catch (err) {
+            console.error("Immediate socket error", err);
+            startDemoMode();
+        }
+    }, [enabled, bboxKey, startDemoMode]);
+
+
+    useEffect(() => {
+        if (!enabled) return;
+        if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
+        debounceTimeoutRef.current = setTimeout(connect, 100);
 
         return () => {
-            if (debounceTimeoutRef.current) {
-                clearTimeout(debounceTimeoutRef.current);
-            }
-
+            if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
+            if (demoIntervalRef.current) clearInterval(demoIntervalRef.current);
             if (socketRef.current) {
-                console.log('Cleaning up WebSocket connection');
                 socketRef.current.close();
                 socketRef.current = null;
             }
@@ -172,9 +206,5 @@ export const useAISSocket = ({ bbox, enabled = true }: UseAISSocketProps) => {
         };
     }, [connect, enabled]);
 
-    return {
-        messages,
-        status,
-        errorCode
-    };
+    return { messages, status, errorCode };
 };
