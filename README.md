@@ -1,82 +1,64 @@
 # The Orbital
 
-![Status](https://img.shields.io/badge/Status-Live-green) ![Security](https://img.shields.io/badge/Security-Standard-blue) ![Version](https://img.shields.io/badge/Version-1.0.0-orange)
+![Status](https://img.shields.io/badge/Status-Live-green) ![Version](https://img.shields.io/badge/Version-1.1.0-orange)
 
 **The Orbital** is a next-generation Maritime Domain Awareness (MDA) platform. It provides real-time tracking, visualization, and analysis of global shipping logistics through a high-fidelity "mission control" interface.
-
-Designed for readability and speed, The Orbital allows operators to monitor key maritime chokepoints (e.g., Rotterdam, Suez, Panama) and track specific high-value assets with minimal latency.
 
 ## 🚀 Key Features
 
 - **Real-Time AIS Tracking**: Live ingestion of Automatic Identification System (AIS) data streams.
-- **Geospatial Intelligence**: Instant filtering of vessels by strategic zones (Geofencing).
+- **Geolocation-Based Local Scan**: Uses your device's location to show nearby maritime traffic.
 - **Tactical Watchlist**: Persistent monitoring of priority vessels.
-- **Crisis Simulation**: Built-in modules for simulating piracy or distress events for training purposes.
+- **Crisis Simulation**: Built-in modules for simulating piracy or distress events.
 - **Operator Metrics**: Live view counters to track active dashboard observers.
 
-## 🛠 Technical Architecture
+## 🛠 Tech Stack
 
-This project is built on a modern, scalable stack designed for performance and maintainability:
+- **Frontend**: [Next.js 16](https://nextjs.org/) (React/TypeScript)
+- **Visualization**: [Deck.gl](https://deck.gl/) + [Mapbox GL](https://www.mapbox.com/)
+- **Data Layer**: Custom WebSocket Proxy for secure AIS streaming
+- **Hosting**: [Vercel](https://vercel.com/) (Recommended)
 
-- **Frontend**: [Next.js 15](https://nextjs.org/) (React/TypeScript) - Utilizing static export for ultra-fast edge delivery.
-- **Visualization**: [Deck.gl](https://deck.gl/) + [Mapbox GL](https://www.mapbox.com/) - Handling high-volume vector data rendering.
-- **Data Layer**: Custom WebSocket Proxy - Ensuring secure, non-blocking data streaming from AIS providers.
-- **Infrastructure**: Firebase - Providing secure hosting and real-time database capabilities.
+## 🚀 Deploy to Vercel (Recommended)
 
-## 🛡 Security & Configuration
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Nedu2022/theorbital)
 
-Security is paramount. No sensitive credentials are hardcoded in this repository. All API keys and access tokens are managed via environment variables.
+1. Click the button above or go to [vercel.com/new](https://vercel.com/new).
+2. Import this repository from GitHub.
+3. Add the following **Environment Variables** in Vercel's dashboard:
 
-### Environment Setup
+| Variable                        | Description               |
+| ------------------------------- | ------------------------- |
+| `NEXT_PUBLIC_MAPBOX_TOKEN`      | Your Mapbox Access Token  |
+| `NEXT_PUBLIC_AISSTREAM_API_KEY` | Your AisStream.io API Key |
 
-To run this application locally, you must configure a `.env.local` file in the root directory. This file is git-ignored to prevent accidental exposure of credentials.
+4. Click **Deploy**.
 
-**Required Variables:**
+> **Note**: The WebSocket proxy (`server/ws-proxy.js`) is currently for local development. For full production live data, deploy the proxy to a separate backend service (e.g., Railway, Render, or Cloud Run) and set `NEXT_PUBLIC_WS_PROXY_URL` to its URL.
 
-```env
-# Mapbox Configuration (Visualization)
-NEXT_PUBLIC_MAPBOX_TOKEN=pk.YOUR_TOKEN_HERE
+## 💻 Local Development
 
-# AIS Stream Configuration (Data Source)
-NEXT_PUBLIC_AISSTREAM_API_KEY=YOUR_API_KEY_HERE
+```bash
+# Install dependencies
+npm install
 
-# Firebase Configuration (Deployment & Analytics)
-NEXT_PUBLIC_FIREBASE_API_KEY=YOUR_FIREBASE_KEY
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+# Start the WebSocket proxy (in a separate terminal)
+node server/ws-proxy.js
+
+# Start the development server
+npm run dev
 ```
 
-## 📦 Deployment Guide
+Open [http://localhost:3000](http://localhost:3000).
 
-### Prerequisites
+## 📱 Mobile Support
 
-- Node.js 18+
-- Firebase CLI (`npm install -g firebase-tools`)
+The Orbital is fully responsive with an optimized mobile experience:
 
-### Build & Deploy
-
-The application is configured for static export to ensure maximum availability and security.
-
-1.  **Install Dependencies**:
-
-    ```bash
-    npm install
-    ```
-
-2.  **Build Production Artifact**:
-
-    ```bash
-    npm run build
-    ```
-
-3.  **Deploy to Firebase Hosting**:
-    ```bash
-    firebase deploy --only hosting
-    ```
+- Collapsible control panel
+- Touch-friendly map interactions
+- Geolocation-based "Local Scan" mode
 
 ---
 
-_© 2026 The Orbital. Internal Use Only. Built by nnedu._
+_© 2026 The Orbital. Built by nnedu._

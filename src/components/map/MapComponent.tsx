@@ -4,6 +4,7 @@ import { Map, MapProvider, Popup } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useShipData } from "@/hooks/useShipData";
 import { useGeofencing } from "@/hooks/useGeofencing";
+import { useUserLocation } from "@/hooks/useUserLocation";
 import ControlPanel from "../dashboard/ControlPanel";
 import MapController from "./MapController";
 import DeckGLOverlay from "./DeckGLOverlay";
@@ -46,13 +47,16 @@ const ATTRIBUTION =
 
 export default function MapComponent() {
   const [viewMode, setViewMode] = useState<"global" | "local">("global");
+  const {
+    location: userLocation,
+    loading: locationLoading,
+    requestLocation,
+    getBbox,
+  } = useUserLocation();
 
-  const ROTTERDAM_BBOX: [number, number, number, number] = [
-    51.5, 3.0, 52.5, 5.0,
-  ];
-
+  // Use user's location bbox for local mode, undefined for global
   const currentBBox: [number, number, number, number] | undefined =
-    viewMode === "global" ? undefined : ROTTERDAM_BBOX;
+    viewMode === "local" ? getBbox() : undefined;
 
   const { ships, connectionStatus, latency, errorCode, isSimulation } =
     useShipData(currentBBox);
@@ -92,7 +96,9 @@ export default function MapComponent() {
     if (mode === "global") {
       setActiveZone("global");
     } else {
-      setActiveZone("rotterdam");
+      // Request user location when switching to local mode
+      requestLocation();
+      setActiveZone("local");
     }
   };
 
@@ -245,7 +251,7 @@ export default function MapComponent() {
           onClick={() => setSelectedShip(null)}
           reuseMaps
         >
-          <MapController targetZone={activeZone} />
+          <MapController targetZone={activeZone} userLocation={userLocation} />
 
           <DeckGLOverlay
             zones={zones}
