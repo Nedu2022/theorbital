@@ -54,7 +54,7 @@ export default function MapComponent() {
   const currentBBox: [number, number, number, number] | undefined =
     viewMode === "global" ? undefined : ROTTERDAM_BBOX;
 
-  const { ships, connectionStatus, latency, errorCode } =
+  const { ships, connectionStatus, latency, errorCode, isSimulation } =
     useShipData(currentBBox);
 
   const [mounted, setMounted] = useState(false);
@@ -200,12 +200,18 @@ export default function MapComponent() {
             <div
               className={`w-2 h-2 rounded-full ${
                 connectionStatus === "connected"
-                  ? "bg-green-500 shadow-[0_0_8px_rgba(0,255,0,0.8)] animate-pulse"
+                  ? isSimulation
+                    ? "bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse"
+                    : "bg-green-500 shadow-[0_0_8px_rgba(0,255,0,0.8)] animate-pulse"
                   : "bg-red-500"
               }`}
             />
             <span className="text-gray-400">
-              {connectionStatus === "connected" ? "UPLINK ACTIVE" : "OFFLINE"}
+              {connectionStatus === "connected"
+                ? isSimulation
+                  ? "SIMULATION ACTIVE"
+                  : "UPLINK ACTIVE"
+                : "OFFLINE"}
             </span>
           </div>
           <div className="h-4 w-px bg-gray-700" />

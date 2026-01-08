@@ -33,6 +33,8 @@ export const useShipData = (bbox?: [number, number, number, number]) => {
     useEffect(() => {
         if (socketStatus === 'connected') {
             setConnectionStatus('connected');
+        } else if (socketStatus === 'demo') {
+            setConnectionStatus('connected');
         } else if (socketStatus === 'error') {
             setConnectionStatus('disconnected');
         } else if (socketStatus === 'disconnected') {
@@ -106,6 +108,7 @@ export const useShipData = (bbox?: [number, number, number, number]) => {
         reconnect: () => {
             window.location.reload();
         },
-        errorCode
+        errorCode,
+        isSimulation: socketStatus === 'demo'
     };
 };
