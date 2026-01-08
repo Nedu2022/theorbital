@@ -207,6 +207,8 @@ export default function ControlPanel({
               )}
             </div>
           )}
+          )}
+        </div>
         <div className="p-3 border-t border-gray-800 bg-black/50">
            <ViewCounter />
         </div>
