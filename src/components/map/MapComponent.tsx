@@ -200,9 +200,9 @@ export default function MapComponent() {
         onRemoveFromWatchlist={removeFromWatchlist}
       />
 
-      <div className="absolute bottom-12 md:bottom-6 right-3 md:right-6 z-[1000] pointer-events-none">
-        <div className="bg-black/80 border border-gray-700 px-3 py-2 flex items-center gap-3 font-mono text-xs">
-          <div className="flex items-center gap-2">
+      <div className="absolute bottom-4 md:bottom-6 right-3 md:right-6 z-[1000] pointer-events-none">
+        <div className="bg-black/90 border border-gray-700 px-2 md:px-3 py-1.5 md:py-2 flex items-center gap-2 md:gap-3 font-mono text-[10px] md:text-xs">
+          <div className="flex items-center gap-1.5 md:gap-2">
             <div
               className={`w-2 h-2 rounded-full ${
                 connectionStatus === "connected"
@@ -216,20 +216,22 @@ export default function MapComponent() {
               {connectionStatus === "connected"
                 ? isSimulation
                   ? "SIMULATION"
-                  : "UPLINK ACTIVE"
+                  : "LIVE"
                 : "OFFLINE"}
             </span>
           </div>
           {ships.length > 0 && (
             <>
               <div className="h-4 w-px bg-gray-700" />
-              <span className="text-cyan-400">{ships.length} TRACKED</span>
+              <span className="text-cyan-400">{ships.length} ships</span>
             </>
           )}
           {connectionStatus === "connected" && (
             <>
-              <div className="h-4 w-px bg-gray-700" />
-              <span className="text-gray-500">{latency.toFixed(0)}ms</span>
+              <div className="hidden md:block h-4 w-px bg-gray-700" />
+              <span className="hidden md:block text-gray-500">
+                {latency.toFixed(0)}ms
+              </span>
             </>
           )}
         </div>
