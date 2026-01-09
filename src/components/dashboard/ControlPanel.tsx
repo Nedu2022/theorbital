@@ -71,7 +71,7 @@ export default function ControlPanel({
             }`}
           >
             <Target className="w-4 h-4" />
-            <span>OPS ZONES</span>
+            <span>LOCATIONS</span>
           </button>
           <button
             onClick={() => setActiveTab("fleet")}
@@ -90,7 +90,7 @@ export default function ControlPanel({
           {activeTab === "zones" && (
             <div className="space-y-2">
               <div className="text-[10px] text-gray-500 mb-2 tracking-widest">
-                GEOFENCE SELECTOR
+                POPULAR PORTS
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -139,7 +139,7 @@ export default function ControlPanel({
 
               <div className="pt-3 mt-3 border-t border-gray-700">
                 <div className="text-[10px] text-gray-500 mb-2 tracking-widest">
-                  CRISIS SIMULATION
+                  DEMO FEATURE
                 </div>
                 <button
                   onClick={onCrisisTrigger}

@@ -1,11 +1,6 @@
 import { useControl } from "react-map-gl/mapbox";
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import {
-  ScatterplotLayer,
-  PathLayer,
-  PolygonLayer,
-  TextLayer,
-} from "@deck.gl/layers";
+import { IconLayer, PolygonLayer, TextLayer } from "@deck.gl/layers";
 import type { MergedShip } from "../../hooks/useShipData";
 import type { GeoZone } from "../../hooks/useGeofencing";
 import { MAJOR_PORTS } from "../../data/ports";
@@ -17,6 +12,31 @@ interface DeckGLOverlayProps {
   zones?: GeoZone[];
   showZones?: boolean;
 }
+
+// Ship icon as data URL (simple boat shape pointing up)
+const SHIP_ICON = `data:image/svg+xml;base64,${btoa(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <polygon points="16,2 26,28 16,22 6,28" fill="#00ff9d" stroke="white" stroke-width="2"/>
+</svg>
+`)}`;
+
+const SHIP_ICON_YELLOW = `data:image/svg+xml;base64,${btoa(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <polygon points="16,2 26,28 16,22 6,28" fill="#fbbf24" stroke="white" stroke-width="2"/>
+</svg>
+`)}`;
+
+const SHIP_ICON_BLUE = `data:image/svg+xml;base64,${btoa(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <polygon points="16,2 26,28 16,22 6,28" fill="#3b82f6" stroke="white" stroke-width="2"/>
+</svg>
+`)}`;
+
+const ICON_MAPPING = {
+  moving: { x: 0, y: 0, width: 32, height: 32, mask: false },
+  stopped: { x: 0, y: 0, width: 32, height: 32, mask: false },
+  docked: { x: 0, y: 0, width: 32, height: 32, mask: false },
+};
 
 export default function DeckGLOverlay({
   ships,
@@ -33,55 +53,40 @@ export default function DeckGLOverlay({
       })
   );
 
-  const getStatusColor = (status: number): [number, number, number] => {
+  const getShipIcon = (status: number): string => {
     switch (status) {
       case 0:
-        return [0, 255, 157];
+        return SHIP_ICON; // Green - Moving
       case 1:
-        return [251, 191, 36];
+        return SHIP_ICON_YELLOW; // Yellow - Stopped
       case 5:
-        return [59, 130, 246];
+        return SHIP_ICON_BLUE; // Blue - Docked
       default:
-        return [148, 163, 184];
+        return SHIP_ICON; // Default green
     }
   };
 
   const layers = [
-    new ScatterplotLayer<MergedShip>({
-      id: "ship-dots",
+    new IconLayer<MergedShip>({
+      id: "ship-icons",
       data: ships,
       pickable: true,
-      opacity: 1,
-      stroked: true,
-      filled: true,
-      radiusScale: 1,
-      radiusMinPixels: 6, // Much larger minimum
-      radiusMaxPixels: 30,
-      lineWidthMinPixels: 2,
       getPosition: (d) => [d.lng, d.lat],
-      getRadius: (d) => (d.sog > 1 ? 300 : 150),
-      // Bright fill color based on status
-      getFillColor: (d) => {
-        switch (d.status) {
-          case 0:
-            return [0, 255, 157, 220]; // Green - Moving
-          case 1:
-            return [251, 191, 36, 220]; // Yellow - Stopped
-          case 5:
-            return [59, 130, 246, 220]; // Blue - Docked
-          default:
-            return [0, 255, 255, 200]; // Cyan - Unknown
-        }
-      },
-      getLineColor: () => [255, 255, 255, 255], // White border
+      getIcon: (d) => ({
+        url: getShipIcon(d.status),
+        width: 32,
+        height: 32,
+        anchorY: 16,
+      }),
+      getSize: 24,
+      sizeMinPixels: 12,
+      sizeMaxPixels: 40,
+      getAngle: (d) => 360 - (d.heading || 0), // Rotate based on heading
       onClick: ({ object }) => object && onSelectShip(object),
       transitions: {
         getPosition: 1000,
-        getLineColor: 300,
-        getRadius: 300,
+        getAngle: 500,
       },
-      // @ts-ignore
-      getRowId: (d) => d.mmsi,
     }),
 
     new PolygonLayer({
@@ -110,18 +115,15 @@ export default function DeckGLOverlay({
       pickable: false,
       getPosition: (d) => [d.lng, d.lat],
       getText: (d) => d.name,
-      getSize: 24,
-      getColor: [255, 255, 255, 255],
+      getSize: 14,
+      getColor: [255, 255, 255, 200],
       getAngle: 0,
       getTextAnchor: "middle",
       getAlignmentBaseline: "center",
-      fontFamily: "Share Tech Mono, monospace",
-      fontWeight: "bold",
-      outlineColor: [0, 0, 0, 255],
-      outlineWidth: 4,
-      background: true,
-      getBackgroundColor: [0, 0, 0, 160],
-      backgroundPadding: [8, 6],
+      fontFamily: "Inter, sans-serif",
+      fontWeight: "600",
+      outlineColor: [0, 0, 0, 200],
+      outlineWidth: 2,
     }),
   ];
 
