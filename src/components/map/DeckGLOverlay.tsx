@@ -51,17 +51,29 @@ export default function DeckGLOverlay({
       id: "ship-dots",
       data: ships,
       pickable: true,
-      opacity: 0.8,
+      opacity: 1,
       stroked: true,
       filled: true,
       radiusScale: 1,
-      radiusMinPixels: 3,
-      radiusMaxPixels: 20,
-      lineWidthMinPixels: 1,
+      radiusMinPixels: 6, // Much larger minimum
+      radiusMaxPixels: 30,
+      lineWidthMinPixels: 2,
       getPosition: (d) => [d.lng, d.lat],
-      getRadius: (d) => (d.sog > 1 ? 200 : 100),
-      getFillColor: (d) => [0, 0, 0, 200],
-      getLineColor: (d) => getStatusColor(d.status),
+      getRadius: (d) => (d.sog > 1 ? 300 : 150),
+      // Bright fill color based on status
+      getFillColor: (d) => {
+        switch (d.status) {
+          case 0:
+            return [0, 255, 157, 220]; // Green - Moving
+          case 1:
+            return [251, 191, 36, 220]; // Yellow - Stopped
+          case 5:
+            return [59, 130, 246, 220]; // Blue - Docked
+          default:
+            return [0, 255, 255, 200]; // Cyan - Unknown
+        }
+      },
+      getLineColor: () => [255, 255, 255, 255], // White border
       onClick: ({ object }) => object && onSelectShip(object),
       transitions: {
         getPosition: 1000,
