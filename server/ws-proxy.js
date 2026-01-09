@@ -17,10 +17,10 @@ const RECONNECT_MAX_DELAY = 30000;
 const DISCONNECT_GRACE_PERIOD = 5000;
 
 if (!AIS_API_KEY) {
-  console.error(
-    " FATAL: NEXT_PUBLIC_AISSTREAM_API_KEY not found in .env.local"
+  console.warn(
+    "⚠️ WARNING: AISSTREAM_API_KEY not found. Add it in Railway Variables."
   );
-  process.exit(1);
+  // Don't exit - let the server start so we can see if it's running
 }
 
 console.log("🔑 API Key loaded:", "..." + AIS_API_KEY.slice(-4));
