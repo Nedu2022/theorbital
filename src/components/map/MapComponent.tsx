@@ -61,6 +61,9 @@ export default function MapComponent() {
   const { ships, connectionStatus, latency, errorCode, isSimulation } =
     useShipData(currentBBox);
 
+  // Debug: Log ship count
+  console.log("MapComponent ships:", ships.length, "status:", connectionStatus);
+
   const [mounted, setMounted] = useState(false);
   const [activeZone, setActiveZone] = useState<string | null>("global");
   const [crisisActive, setCrisisActive] = useState(false);

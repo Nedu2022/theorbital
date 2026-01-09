@@ -141,14 +141,18 @@ export const useAISSocket = ({ bbox, enabled = true }: UseAISSocketProps) => {
                 setStatus('connected');
                 setErrorCode(null);
 
+                // Use Rotterdam area by default for reliable data
+                // Global bbox causes too many ships and disconnects
+                const defaultBbox: [[number, number], [number, number]] = [[51.8, 3.8], [52.1, 4.6]];
                 const subscription = {
                     BoundingBoxes: [
                         bbox
                             ? [[bbox[0], bbox[1]], [bbox[2], bbox[3]]]
-                            : [[-90, -180], [90, 180]]
+                            : defaultBbox
                     ],
                     FilterMessageTypes: ["PositionReport", "StandardClassBPositionReport", "ShipStaticData"]
                 };
+                console.log("Sending subscription:", JSON.stringify(subscription));
                 ws.send(JSON.stringify(subscription));
             };
 

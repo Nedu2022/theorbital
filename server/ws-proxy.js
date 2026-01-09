@@ -59,25 +59,28 @@ class AISStreamManager {
       this.isConnecting = false;
       this.reconnectAttempts = 0;
 
-      // Resend active subscription if exists
-      if (this.currentMergedSubscription) {
-        const payloadString = JSON.stringify(this.currentMergedSubscription);
-        console.log("🔄 Resending active subscription on reconnect");
-        this.aisWs.send(payloadString);
-        this.lastSentSubscription = payloadString;
-      }
+      // Wait a moment before sending subscription (prevents immediate disconnect)
+      setTimeout(() => {
+        // Resend active subscription if exists
+        if (this.currentMergedSubscription) {
+          const payloadString = JSON.stringify(this.currentMergedSubscription);
+          console.log("🔄 Resending active subscription on reconnect");
+          this.aisWs.send(payloadString);
+          this.lastSentSubscription = payloadString;
+        }
 
-      // Broadcast connection status to all clients
-      this.broadcastToClients({
-        type: "proxy_status",
-        status: "connected",
-      });
+        // Broadcast connection status to all clients
+        this.broadcastToClients({
+          type: "proxy_status",
+          status: "connected",
+        });
 
-      // Process queued subscriptions
-      this.processSubscriptionQueue();
+        // Process queued subscriptions
+        this.processSubscriptionQueue();
 
-      // Start heartbeat
-      this.startHeartbeat();
+        // Start heartbeat
+        this.startHeartbeat();
+      }, 500); // 500ms delay before sending subscription
     });
 
     this.aisWs.on("message", (data) => {
