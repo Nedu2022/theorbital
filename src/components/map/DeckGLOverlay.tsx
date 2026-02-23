@@ -18,7 +18,7 @@ function DeckGLOverlayInner({ props }: { props: DeckGLOverlayProps }) {
   const { ships, onSelectShip, zones = [], showZones = false } = props;
 
   const overlay = useControl<MapboxOverlay>(
-    () => new MapboxOverlay({ interleaved: true })
+    () => new MapboxOverlay({ interleaved: true }),
   );
 
   const layers = useMemo(() => {
@@ -77,6 +77,7 @@ function DeckGLOverlayInner({ props }: { props: DeckGLOverlayProps }) {
         fontWeight: "600",
         outlineColor: [0, 0, 0, 200],
         outlineWidth: 2,
+        fontSettings: { sdf: true },
       }),
     ];
   }, [ships, onSelectShip, zones, showZones]);
