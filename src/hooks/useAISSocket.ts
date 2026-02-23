@@ -110,7 +110,7 @@ export const useAISSocket = ({ bbox, enabled = true }: UseAISSocketProps) => {
         // PRODUCTION: DO NOT AUTO CONNECT TO LOCALHOST
         // We only connect if process.env.NEXT_PUBLIC_FORCE_LIVE is set.
         // Otherwise, we wait for user to trigger demo mode or just stay offline.
-        const isProduction = typeof window !== 'undefined' && window.location.hostname.includes('web.app');
+        const isProduction = typeof window !== 'undefined' && (window.location.hostname.includes('web.app') || window.location.hostname.includes('vercel.app'));
         if (isProduction && !process.env.NEXT_PUBLIC_FORCE_LIVE) {
             console.log("Production environment detected. Not connecting to localhost proxy.");
             isConnectingRef.current = false;
